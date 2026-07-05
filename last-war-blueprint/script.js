@@ -20,30 +20,135 @@ const CITY_WIDTH_TILES = 7;
 const CITY_HEIGHT_TILES = 6;
 const CITY_GAP_TILES = 3; // gap between city footprint and the hive
 
-// Core R4/R5 placements, given as (col, row) offsets from the Marshall
-// Guard (MG) position, which is treated as the anchor (0, 0). Moving a
-// member is a one-line edit here; the flood-fill packer does the rest.
+// The full named roster, given as (col, row) offsets from the Marshall
+// Guard (MG) position, which is treated as the anchor (0, 0). This is
+// the alliance's actual placement — every one of the 101 packed slots
+// has a real name, so no auto-fill is needed by default (see
+// DEFAULT_TIER_COUNTS below). Moving or renaming a member is a one-line
+// edit here; the flood-fill packer only kicks in for any extra tier
+// count you add on top of this roster.
 const CORE_BASES = [
-  { name: "Cristy", col: 2, row: -1 },
+  { name: "Wuzzle", col: -2, row: -5 },
+  { name: "Aliarya", col: -1, row: -5 },
+  { name: "Opasen", col: 0, row: -5 },
+  { name: "Marcee", col: 1, row: -5 },
+  { name: "Nisar", col: 2, row: -5 },
+
+  { name: "SKSingh", col: -4, row: -4 },
+  { name: "Reid", col: -3, row: -4 },
+  { name: "Drupadh", col: -2, row: -4 },
+  { name: "Blaserj", col: -1, row: -4 },
+  { name: "majin", col: 0, row: -4 },
+  { name: "namelessw", col: 1, row: -4 },
+  { name: "Ducboy", col: 2, row: -4 },
+  { name: "Juleeey", col: 3, row: -4 },
+  { name: "Kedo", col: 4, row: -4 },
+
+  { name: "See1234", col: -4, row: -3 },
+  { name: "Kuldeep", col: -3, row: -3 },
+  { name: "Shameem", col: -2, row: -3 },
+  { name: "Atomone", col: -1, row: -3 },
+  { name: "Manish", col: 0, row: -3 },
+  { name: "Ligaya", col: 1, row: -3 },
+  { name: "MKComando", col: 2, row: -3 },
+  { name: "GC G3", col: 3, row: -3 },
+  { name: "nam nhe", col: 4, row: -3 },
+
+  { name: "DeepVK", col: -5, row: -2 },
+  { name: "tho cuong", col: -4, row: -2 },
+  { name: "DD Gujjar", col: -3, row: -2 },
+  { name: "Rohan", col: -2, row: -2 },
+  { name: "NMT", col: -1, row: -2 },
+  { name: "Zizou", col: 0, row: -2 },
   { name: "DBK", col: 1, row: -2 },
-  { name: "HHK", col: 1, row: -1 },
-  { name: "MikeIs", col: -1, row: -1 },
-  { name: "Ironman", col: 0, row: -1 },
+  { name: "HSBC", col: 2, row: -2 },
+  { name: "Leslie", col: 3, row: -2 },
+  { name: "mel u", col: 4, row: -2 },
+  { name: "Dark", col: 5, row: -2 },
+
+  { name: "Kartgik", col: -5, row: -1 },
+  { name: "Bharath", col: -4, row: -1 },
+  { name: "1eca12034", col: -3, row: -1 },
+  { name: "MD", col: -2, row: -1 },
+  { name: "Jal", col: -1, row: -1 },
+  { name: "HHK", col: 0, row: -1 },
+  { name: "Ironman", col: 1, row: -1 },
+  { name: "Cristy", col: 2, row: -1 },
+  { name: "Vilsri", col: 3, row: -1 },
+  { name: "Nithzil", col: 4, row: -1 },
+  { name: "New 1", col: 5, row: -1 },
+
+  { name: "Hunter", col: -5, row: 0 },
+  { name: "Iuroro", col: -4, row: 0 },
+  { name: "Demagogue", col: -3, row: 0 },
+  { name: "Royal", col: -2, row: 0 },
   { name: "Vrish", col: -1, row: 0 },
   { name: "MG", col: 0, row: 0, tier: "mg" },
   { name: "Ajitanshu", col: 1, row: 0 },
   { name: "Milka", col: 2, row: 0 },
+  { name: "Julien", col: 3, row: 0 },
+  { name: "豆总", col: 4, row: 0 },
+  { name: "New 2", col: 5, row: 0 },
+
+  { name: "jin", col: -5, row: 1 },
+  { name: "DinoDevil", col: -4, row: 1 },
+  { name: "Fishlay", col: -3, row: 1 },
+  { name: "Storm", col: -2, row: 1 },
   { name: "DJ", col: -1, row: 1 },
-  { name: "Jal", col: 0, row: 1 },
+  { name: "Mikels", col: 0, row: 1 },
   { name: "Deadman", col: 1, row: 1 },
+  { name: "Tom", col: 2, row: 1 },
+  { name: "Neldesilva", col: 3, row: 1 },
+  { name: "大茶壶", col: 4, row: 1 },
+  { name: "New 3", col: 5, row: 1 },
+
+  { name: "thonger", col: -5, row: 2 },
+  { name: "Nezuko", col: -4, row: 2 },
+  { name: "Maelis", col: -3, row: 2 },
+  { name: "Base Ni", col: -2, row: 2 },
+  { name: "Shyam", col: -1, row: 2 },
+  { name: "TNT", col: 0, row: 2 },
+  { name: "Donut", col: 1, row: 2 },
+  { name: "Lolly", col: 2, row: 2 },
+  { name: "Sempre", col: 3, row: 2 },
+  { name: "DeyL", col: 4, row: 2 },
+  { name: "Pankaj", col: 5, row: 2 },
+
+  { name: "Gags", col: -4, row: 3 },
+  { name: "Sweta", col: -3, row: 3 },
+  { name: "TShadow", col: -2, row: 3 },
+  { name: "Raj", col: -1, row: 3 },
+  { name: "Jaipal", col: 0, row: 3 },
+  { name: "Madhands", col: 1, row: 3 },
+  { name: "Anirudh", col: 2, row: 3 },
+  { name: "Vipin", col: 3, row: 3 },
+  { name: "TeaBrew", col: 4, row: 3 },
+
+  { name: "Dharma", col: -4, row: 4 },
+  { name: "YDK", col: -3, row: 4 },
+  { name: "love in", col: -2, row: 4 },
+  { name: "Mo Yosuf", col: -1, row: 4 },
+  { name: "Beval", col: 0, row: 4 },
+  { name: "Solanki", col: 1, row: 4 },
+  { name: "Omega", col: 2, row: 4 },
+  { name: "Ryan", col: 3, row: 4 },
+  { name: "Chain Gang", col: 4, row: 4 },
+
+  { name: "tor", col: -2, row: 5 },
+  { name: "kaira", col: -1, row: 5 },
+  { name: "Yoriichi", col: 0, row: 5 },
+  { name: "patc", col: 1, row: 5 },
+  { name: "zhyf", col: 2, row: 5 },
 ];
 
-// Fill-tier counts. Changing these and hitting "Regenerate" (or calling
-// App.regenerate()) rebuilds the whole hive with no manual placement.
+// Fill-tier counts. The roster above already names every packed slot,
+// so these default to 0 — regenerating reproduces the roster exactly.
+// Raise any of these and hit "Regenerate" to flood-fill extra generic
+// bases outward from the roster's current outer edge.
 const DEFAULT_TIER_COUNTS = {
-  R3: 38,
-  R2: 30,
-  R1: 21,
+  R3: 0,
+  R2: 0,
+  R1: 0,
 };
 
 const COLORS = {

@@ -26,7 +26,7 @@ const CITY_GAP_TILES = 3; // gap between city footprint and the hive
 const CORE_BASES = [
   { name: "Cristy", col: 2, row: -1 },
   { name: "DBK", col: 1, row: -2 },
-  { name: "Sky", col: 1, row: -1 },
+  { name: "HHK", col: 1, row: -1 },
   { name: "MikeIs", col: -1, row: -1 },
   { name: "Ironman", col: 0, row: -1 },
   { name: "Vrish", col: -1, row: 0 },

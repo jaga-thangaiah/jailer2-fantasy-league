@@ -524,11 +524,17 @@ const App = (() => {
   const inputR1 = document.getElementById("input-r1");
   const btnEditMode = document.getElementById("btn-edit-mode");
 
+  const renameBackdrop = document.getElementById("rename-backdrop");
+  const renameInput = document.getElementById("rename-input");
+  const renameConfirmBtn = document.getElementById("rename-confirm");
+  const renameCancelBtn = document.getElementById("rename-cancel");
+
   let view = { scale: 1, x: 0, y: 0 };
   let currentLayout = null;
   let currentOffset = null;
   let editMode = false;
   let selectedBlock = null;
+  let renamingBlock = null;
 
   const MIN_SCALE = 0.4;
   const MAX_SCALE = 6;
@@ -691,13 +697,30 @@ const App = (() => {
     redrawHive();
   }
 
+  // A custom overlay stands in for window.prompt(): sandboxed hosts (an
+  // Artifact preview iframe, for instance) silently swallow native
+  // dialogs, so this is the only version guaranteed to actually appear.
   function onBaseRename(block) {
-    const next = window.prompt("Rename this base:", block.label);
-    if (next === null) return;
-    const trimmed = next.trim();
-    if (!trimmed || trimmed === block.label) return;
-    block.label = trimmed;
-    redrawHive();
+    renamingBlock = block;
+    renameInput.value = block.label;
+    renameBackdrop.classList.remove("hidden");
+    renameInput.focus();
+    renameInput.select();
+  }
+
+  function closeRenameModal() {
+    renamingBlock = null;
+    renameBackdrop.classList.add("hidden");
+  }
+
+  function confirmRename() {
+    if (!renamingBlock) return;
+    const trimmed = renameInput.value.trim();
+    if (trimmed && trimmed !== renamingBlock.label) {
+      renamingBlock.label = trimmed;
+      redrawHive();
+    }
+    closeRenameModal();
   }
 
   function onBackgroundClick() {
@@ -808,7 +831,12 @@ const App = (() => {
     });
     backgroundRect.addEventListener("click", onBackgroundClick);
     window.addEventListener("keydown", (evt) => {
-      if (evt.key === "Escape") clearSelection();
+      if (evt.key !== "Escape") return;
+      if (renamingBlock) {
+        closeRenameModal();
+      } else {
+        clearSelection();
+      }
     });
 
     document.getElementById("btn-regenerate").addEventListener("click", regenerate);
@@ -817,6 +845,15 @@ const App = (() => {
     document.getElementById("btn-reset-view").addEventListener("click", resetView);
     document.getElementById("btn-export-svg").addEventListener("click", exportSvg);
     document.getElementById("btn-export-png").addEventListener("click", exportPng4k);
+
+    renameConfirmBtn.addEventListener("click", confirmRename);
+    renameCancelBtn.addEventListener("click", closeRenameModal);
+    renameBackdrop.addEventListener("click", (evt) => {
+      if (evt.target === renameBackdrop) closeRenameModal();
+    });
+    renameInput.addEventListener("keydown", (evt) => {
+      if (evt.key === "Enter") confirmRename();
+    });
 
     regenerate();
     applyTransform();

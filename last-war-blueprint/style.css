@@ -197,3 +197,61 @@ body {
 #stat-readout {
   color: var(--text-dim);
 }
+
+/* ---------- rename dialog ----------
+   A custom overlay instead of window.prompt(): sandboxed hosts (e.g. an
+   embedded Artifact iframe without allow-modals) silently block native
+   dialogs, so a real dialog is the only version that works everywhere. */
+
+#rename-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 9, 13, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+#rename-backdrop.hidden {
+  display: none;
+}
+
+#rename-box {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 18px 20px;
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+#rename-box label {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: var(--text-dim);
+}
+
+#rename-box input {
+  background: var(--panel-bg-2);
+  border: 1px solid var(--panel-border);
+  color: var(--text-main);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  border-radius: 3px;
+}
+
+#rename-box input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.rename-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

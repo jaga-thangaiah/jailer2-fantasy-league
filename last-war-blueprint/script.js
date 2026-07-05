@@ -24,9 +24,9 @@ const CITY_GAP_TILES = 3; // gap between city footprint and the hive
 // Guard (MG) position, which is treated as the anchor (0, 0). Moving a
 // member is a one-line edit here; the flood-fill packer does the rest.
 const CORE_BASES = [
-  { name: "Cristy", col: 1, row: -4 },
-  { name: "DBK", col: 1, row: -3 },
-  { name: "Sky", col: 0, row: -2 },
+  { name: "Cristy", col: 2, row: -1 },
+  { name: "DBK", col: 1, row: -2 },
+  { name: "Sky", col: 1, row: -1 },
   { name: "MikeIs", col: -1, row: -1 },
   { name: "Ironman", col: 0, row: -1 },
   { name: "Vrish", col: -1, row: 0 },

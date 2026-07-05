@@ -56,14 +56,11 @@ const COLORS = {
   cityStroke: "#4E5766",
   cityRoof: "#5C6779",
   highlight: "#FFF176",
-  // Alternating dark/light blue bands by tier, so which ring a base sits
-  // in (core, R3, R2, R1) reads at a glance without checking its label.
-  tiers: {
-    core: { fill: "#1E3F99", stroke: "#12285C" },
-    R3: { fill: "#7FB0FF", stroke: "#3D6FC2" },
-    R2: { fill: "#1E3F99", stroke: "#12285C" },
-    R1: { fill: "#7FB0FF", stroke: "#3D6FC2" },
-  },
+  // Alternating dark/light blue bands by concentric square ring around MG
+  // (the 8 touching it, then the 16 around those, then 24, ...), so which
+  // layer out from the center a base sits in reads at a glance.
+  ringDark: { fill: "#1E3F99", stroke: "#12285C" },
+  ringLight: { fill: "#7FB0FF", stroke: "#3D6FC2" },
 };
 
 /* =========================================================================
@@ -314,9 +311,16 @@ const Render = (() => {
     const cy = y + blockPx / 2;
 
     const isMg = block.tier === "mg";
+    // Chebyshev distance from MG's grid cell (0,0): ring 1 is the 8 cells
+    // touching MG, ring 2 the 16 around those, ring 3 the 24 after that,
+    // etc. This is purely geometric, so it stays correct through swaps —
+    // only the orange marker follows wherever the "mg" tier actually is.
+    const ring = Math.max(Math.abs(block.bx), Math.abs(block.by));
     const palette = isMg
       ? { fill: COLORS.mg, stroke: COLORS.mgStroke }
-      : COLORS.tiers[block.tier] || COLORS.tiers.R1;
+      : ring % 2 === 1
+      ? COLORS.ringDark
+      : COLORS.ringLight;
     const fill = palette.fill;
     const stroke = palette.stroke;
 

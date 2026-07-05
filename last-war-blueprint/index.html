@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EKEY Hive Blueprint</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header id="toolbar">
+  <div class="toolbar-group toolbar-title">
+    <span class="title-main">EKEY ALLIANCE</span>
+    <span class="title-sub">HIVE PLACEMENT BLUEPRINT &mdash; DWG.01</span>
+  </div>
+
+  <div class="toolbar-group">
+    <label class="field">R3 count
+      <input type="number" id="input-r3" min="0" max="200" value="38" />
+    </label>
+    <label class="field">R2 count
+      <input type="number" id="input-r2" min="0" max="200" value="30" />
+    </label>
+    <label class="field">R1 count
+      <input type="number" id="input-r1" min="0" max="200" value="21" />
+    </label>
+    <button id="btn-regenerate" class="btn btn-primary">Regenerate</button>
+  </div>
+
+  <div class="toolbar-group">
+    <button id="btn-grid" class="btn">Toggle Grid</button>
+    <button id="btn-reset-view" class="btn">Reset View</button>
+    <button id="btn-export-svg" class="btn">Export SVG</button>
+    <button id="btn-export-png" class="btn">Export PNG (4K)</button>
+  </div>
+</header>
+
+<main id="stage">
+  <div id="viewport-container">
+    <svg id="blueprint" viewBox="0 0 1600 1600" xmlns="http://www.w3.org/2000/svg">
+      <g id="viewport" transform="translate(0,0) scale(1)">
+        <rect id="background" x="0" y="0" width="1600" height="1600" fill="#78A950"></rect>
+        <g id="grid-layer"></g>
+        <g id="city-layer"></g>
+        <g id="hive-layer"></g>
+      </g>
+    </svg>
+  </div>
+
+  <div id="readout-panel">
+    <div id="tile-readout">Tile: &mdash;</div>
+    <div id="stat-readout">Bases: &mdash;</div>
+  </div>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>

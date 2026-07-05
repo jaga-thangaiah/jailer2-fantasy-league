@@ -49,8 +49,6 @@ const DEFAULT_TIER_COUNTS = {
 const COLORS = {
   grass: "#78A950",
   grid: "#5C8744",
-  base: "#4B89FF",
-  baseStroke: "#2E5FBF",
   mg: "#F39C34",
   mgStroke: "#B96E12",
   label: "#FFFFFF",
@@ -58,6 +56,14 @@ const COLORS = {
   cityStroke: "#4E5766",
   cityRoof: "#5C6779",
   highlight: "#FFF176",
+  // Alternating dark/light blue bands by tier, so which ring a base sits
+  // in (core, R3, R2, R1) reads at a glance without checking its label.
+  tiers: {
+    core: { fill: "#1E3F99", stroke: "#12285C" },
+    R3: { fill: "#7FB0FF", stroke: "#3D6FC2" },
+    R2: { fill: "#1E3F99", stroke: "#12285C" },
+    R1: { fill: "#7FB0FF", stroke: "#3D6FC2" },
+  },
 };
 
 /* =========================================================================
@@ -308,8 +314,11 @@ const Render = (() => {
     const cy = y + blockPx / 2;
 
     const isMg = block.tier === "mg";
-    const fill = isMg ? COLORS.mg : COLORS.base;
-    const stroke = isMg ? COLORS.mgStroke : COLORS.baseStroke;
+    const palette = isMg
+      ? { fill: COLORS.mg, stroke: COLORS.mgStroke }
+      : COLORS.tiers[block.tier] || COLORS.tiers.R1;
+    const fill = palette.fill;
+    const stroke = palette.stroke;
 
     const g = el("g", {
       class: "base-group",

@@ -292,12 +292,18 @@ const Render = (() => {
     return g;
   }
 
-  function drawBlock(hiveLayer, block, offset, onHover) {
+  // Absolute tile/pixel rectangle a block occupies, given the current
+  // hive offset. Shared by block drawing and the selection overlay so
+  // both always agree on where a block actually sits.
+  function tileRectForBlock(block, offset) {
     const blockPx = BASE_BLOCK * TILE_PX;
     const tileX = offset.hiveOriginTileX + (block.bx - offset.minBx) * BASE_BLOCK;
     const tileY = offset.hiveOriginTileY + (block.by - offset.minBy) * BASE_BLOCK;
-    const x = tileX * TILE_PX;
-    const y = tileY * TILE_PX;
+    return { tileX, tileY, x: tileX * TILE_PX, y: tileY * TILE_PX, size: blockPx };
+  }
+
+  function drawBlock(hiveLayer, block, offset, handlers) {
+    const { tileX, tileY, x, y, size: blockPx } = tileRectForBlock(block, offset);
     const cx = x + blockPx / 2;
     const cy = y + blockPx / 2;
 
@@ -359,14 +365,44 @@ const Render = (() => {
 
     g.addEventListener("mouseenter", () => {
       highlight.setAttribute("opacity", "1");
-      if (onHover) onHover(block, tileX, tileY, true);
+      if (handlers && handlers.onHover) handlers.onHover(block, tileX, tileY, true);
     });
     g.addEventListener("mouseleave", () => {
       highlight.setAttribute("opacity", "0");
-      if (onHover) onHover(block, tileX, tileY, false);
+      if (handlers && handlers.onHover) handlers.onHover(block, tileX, tileY, false);
+    });
+    g.addEventListener("click", () => {
+      if (handlers && handlers.onClick) handlers.onClick(block);
+    });
+    g.addEventListener("dblclick", (evt) => {
+      evt.stopPropagation();
+      if (handlers && handlers.onDblClick) handlers.onDblClick(block);
     });
 
     hiveLayer.appendChild(g);
+  }
+
+  // Highlights the currently-selected block with a distinct dashed
+  // outline so it reads differently from the transient hover outline.
+  function drawSelectionHighlight(selectionLayer, block, offset) {
+    clear(selectionLayer);
+    if (!block) return;
+    const { x, y, size } = tileRectForBlock(block, offset);
+    selectionLayer.appendChild(
+      el("rect", {
+        x,
+        y,
+        width: size,
+        height: size,
+        rx: 4,
+        ry: 4,
+        fill: "none",
+        stroke: "#FFFFFF",
+        "stroke-width": 3.5,
+        "stroke-dasharray": "7 5",
+        "pointer-events": "none",
+      })
+    );
   }
 
   function drawCity(cityLayer, offset) {
@@ -431,21 +467,36 @@ const Render = (() => {
     cityLayer.appendChild(g);
   }
 
-  function renderAll(layers, layoutResult, onHover) {
+  // Redraws just the hive blocks against an already-computed offset.
+  // Used both by the initial render and by in-place edits (swap/rename)
+  // that never change the hive's bounds.
+  function redrawHive(hiveLayer, blocks, offset, handlers) {
+    clear(hiveLayer);
+    blocks.forEach((block) => drawBlock(hiveLayer, block, offset, handlers));
+  }
+
+  function renderAll(layers, layoutResult, handlers) {
     const offset = computeOffsets(layoutResult.bounds);
     offset.minBx = layoutResult.bounds.minBx;
     offset.minBy = layoutResult.bounds.minBy;
 
     drawGrid(layers.grid);
     drawCity(layers.city, offset);
-
-    clear(layers.hive);
-    layoutResult.blocks.forEach((block) => drawBlock(layers.hive, block, offset, onHover));
+    redrawHive(layers.hive, layoutResult.blocks, offset, handlers);
+    clear(layers.selection);
 
     return offset;
   }
 
-  return { renderAll, computeOffsets, el, clear };
+  return {
+    renderAll,
+    redrawHive,
+    drawSelectionHighlight,
+    tileRectForBlock,
+    computeOffsets,
+    el,
+    clear,
+  };
 })();
 
 /* =========================================================================
@@ -462,19 +513,26 @@ const App = (() => {
     grid: document.getElementById("grid-layer"),
     city: document.getElementById("city-layer"),
     hive: document.getElementById("hive-layer"),
+    selection: document.getElementById("selection-layer"),
   };
   const tileReadout = document.getElementById("tile-readout");
   const statReadout = document.getElementById("stat-readout");
+  const backgroundRect = document.getElementById("background");
 
   const inputR3 = document.getElementById("input-r3");
   const inputR2 = document.getElementById("input-r2");
   const inputR1 = document.getElementById("input-r1");
+  const btnEditMode = document.getElementById("btn-edit-mode");
 
   let view = { scale: 1, x: 0, y: 0 };
   let currentLayout = null;
+  let currentOffset = null;
+  let editMode = false;
+  let selectedBlock = null;
 
   const MIN_SCALE = 0.4;
   const MAX_SCALE = 6;
+  const CLICK_MOVE_THRESHOLD = 6; // outer units; beyond this, a mouseup is a drag, not a click
 
   function applyTransform() {
     viewportGroup.setAttribute(
@@ -517,11 +575,16 @@ const App = (() => {
 
   let dragging = false;
   let dragStart = null;
+  // Total mouse movement since the last mousedown, in outer units. A
+  // "click" on a base/background is only honored when this stays small,
+  // so panning a little before releasing over a base doesn't select it.
+  let dragDistance = 0;
 
   function onMouseDown(evt) {
     if (evt.button !== 0) return;
     dragging = true;
     dragStart = { outer: outerPointFromEvent(evt), x: view.x, y: view.y };
+    dragDistance = 0;
     viewportContainer.classList.add("dragging");
   }
 
@@ -532,6 +595,10 @@ const App = (() => {
       view.x = dragStart.x + (outer.x - dragStart.outer.x);
       view.y = dragStart.y + (outer.y - dragStart.outer.y);
       applyTransform();
+      dragDistance = Math.max(
+        dragDistance,
+        Math.hypot(outer.x - dragStart.outer.x, outer.y - dragStart.outer.y)
+      );
     }
 
     const inner = outerToInner(outer);
@@ -550,6 +617,10 @@ const App = (() => {
     viewportContainer.classList.remove("dragging");
   }
 
+  function wasClick() {
+    return dragDistance < CLICK_MOVE_THRESHOLD;
+  }
+
   function onHoverBase(block, tileX, tileY, entering) {
     if (!entering) {
       updateStats();
@@ -563,6 +634,74 @@ const App = (() => {
     const total = currentLayout.blocks.length;
     const tilesUsed = total * BASE_BLOCK * BASE_BLOCK;
     statReadout.textContent = `Bases: ${total} · Tiles used: ${tilesUsed} / ${MAP_TILES * MAP_TILES}`;
+  }
+
+  /* ----- edit mode: click-to-select / click-to-place swap, and rename ----- */
+
+  function setEditMode(on) {
+    editMode = on;
+    btnEditMode.classList.toggle("btn-active", editMode);
+    btnEditMode.textContent = editMode ? "Editing… (click two bases)" : "Edit Layout";
+    if (!editMode) clearSelection();
+  }
+
+  function clearSelection() {
+    selectedBlock = null;
+    Render.drawSelectionHighlight(layers.selection, null, currentOffset);
+  }
+
+  // Swaps the identity (name + tier) of two blocks in place. Their grid
+  // positions never move, so the hive stays exactly as packed as before —
+  // there is no way for a swap to open a gap or create an overlap.
+  function swapBlockIdentity(a, b) {
+    const label = a.label;
+    const tier = a.tier;
+    a.label = b.label;
+    a.tier = b.tier;
+    b.label = label;
+    b.tier = tier;
+  }
+
+  function redrawHive() {
+    if (!currentLayout || !currentOffset) return;
+    Render.redrawHive(layers.hive, currentLayout.blocks, currentOffset, {
+      onHover: onHoverBase,
+      onClick: onBaseClick,
+      onDblClick: onBaseRename,
+    });
+    Render.drawSelectionHighlight(layers.selection, selectedBlock, currentOffset);
+  }
+
+  function onBaseClick(block) {
+    if (!editMode || !wasClick()) return;
+
+    if (!selectedBlock) {
+      selectedBlock = block;
+      Render.drawSelectionHighlight(layers.selection, selectedBlock, currentOffset);
+      return;
+    }
+
+    if (selectedBlock === block) {
+      clearSelection();
+      return;
+    }
+
+    swapBlockIdentity(selectedBlock, block);
+    selectedBlock = null;
+    redrawHive();
+  }
+
+  function onBaseRename(block) {
+    const next = window.prompt("Rename this base:", block.label);
+    if (next === null) return;
+    const trimmed = next.trim();
+    if (!trimmed || trimmed === block.label) return;
+    block.label = trimmed;
+    redrawHive();
+  }
+
+  function onBackgroundClick() {
+    if (editMode && wasClick() && selectedBlock) clearSelection();
   }
 
   function resetView() {
@@ -585,7 +724,12 @@ const App = (() => {
   function regenerate() {
     const tierCounts = readTierCounts();
     currentLayout = Layout.generateLayout({ coreBases: CORE_BASES, tierCounts });
-    Render.renderAll(layers, currentLayout, onHoverBase);
+    clearSelection();
+    currentOffset = Render.renderAll(layers, currentLayout, {
+      onHover: onHoverBase,
+      onClick: onBaseClick,
+      onDblClick: onBaseRename,
+    });
     updateStats();
   }
 
@@ -662,8 +806,13 @@ const App = (() => {
     viewportContainer.addEventListener("mouseleave", () => {
       tileReadout.textContent = "Tile: —";
     });
+    backgroundRect.addEventListener("click", onBackgroundClick);
+    window.addEventListener("keydown", (evt) => {
+      if (evt.key === "Escape") clearSelection();
+    });
 
     document.getElementById("btn-regenerate").addEventListener("click", regenerate);
+    btnEditMode.addEventListener("click", () => setEditMode(!editMode));
     document.getElementById("btn-grid").addEventListener("click", toggleGrid);
     document.getElementById("btn-reset-view").addEventListener("click", resetView);
     document.getElementById("btn-export-svg").addEventListener("click", exportSvg);

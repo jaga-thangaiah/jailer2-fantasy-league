@@ -111,6 +111,25 @@ body {
   filter: brightness(1.08);
 }
 
+.btn-active {
+  background: var(--accent-orange);
+  border-color: var(--accent-orange);
+  color: #1c1300;
+  font-weight: 700;
+}
+
+.toolbar-hint {
+  flex: 1 1 260px;
+  justify-content: flex-end;
+}
+
+#hint-text {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  letter-spacing: 0.2px;
+  text-align: right;
+}
+
 /* ---------- stage ---------- */
 
 #stage {
@@ -145,6 +164,10 @@ body {
   height: 100%;
   display: block;
   user-select: none;
+}
+
+.base-group {
+  cursor: pointer;
 }
 
 /* ---------- readout ---------- */

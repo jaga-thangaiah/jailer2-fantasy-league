@@ -28,10 +28,15 @@
   </div>
 
   <div class="toolbar-group">
+    <button id="btn-edit-mode" class="btn">Edit Layout</button>
     <button id="btn-grid" class="btn">Toggle Grid</button>
     <button id="btn-reset-view" class="btn">Reset View</button>
     <button id="btn-export-svg" class="btn">Export SVG</button>
     <button id="btn-export-png" class="btn">Export PNG (4K)</button>
+  </div>
+
+  <div class="toolbar-group toolbar-hint">
+    <span id="hint-text">Double-click any base to rename it. Turn on Edit Layout, then click two bases to swap their positions.</span>
   </div>
 </header>
 
@@ -43,6 +48,7 @@
         <g id="grid-layer"></g>
         <g id="city-layer"></g>
         <g id="hive-layer"></g>
+        <g id="selection-layer"></g>
       </g>
     </svg>
   </div>
